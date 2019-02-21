@@ -210,7 +210,7 @@ class FormulaInstaller
   def install
     start_time = Time.now
     if !formula.bottle_unneeded? && !pour_bottle? && DevelopmentTools.installed?
-      Homebrew::Install.perform_development_tools_checks
+      Homebrew::Install.perform_build_from_source_checks
     end
 
     # not in initialize so upgrade can unlink the active keg before calling this
@@ -297,7 +297,9 @@ class FormulaInstaller
           formula.prefix.rmtree if formula.prefix.directory?
           formula.rack.rmdir_if_possible
         end
-        raise if ARGV.homebrew_developer? || e.is_a?(Interrupt)
+        raise if ARGV.homebrew_developer? ||
+                 e.is_a?(Interrupt) ||
+                 ENV["HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK"]
 
         @pour_failed = true
         onoe e.message
@@ -742,10 +744,6 @@ class FormulaInstaller
     ].concat(build_argv)
 
     Utils.safe_fork do
-      # Invalidate the current sudo timestamp in case a build script calls sudo.
-      # Travis CI's Linux sudoless workers have a weird sudo that fails here.
-      system "/usr/bin/sudo", "-k" if ENV["HOMEBREW_TRAVIS_SUDO"] != "false"
-
       if Sandbox.formula?(formula)
         sandbox = Sandbox.new
         formula.logs.mkpath

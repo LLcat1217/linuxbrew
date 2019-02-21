@@ -10,9 +10,24 @@ if RUBY_X < 2 || (RUBY_X == 2 && RUBY_Y < 3)
   raise "Homebrew must be run under Ruby 2.3! You're running #{RUBY_VERSION}."
 end
 
-require_relative "global"
+# Also define here so we can rescue regardless of location.
+class MissingEnvironmentVariables < RuntimeError; end
 
-require "update_migrator"
+begin
+  require_relative "global"
+rescue MissingEnvironmentVariables => e
+  raise e if ENV["HOMEBREW_MISSING_ENV_RETRY"]
+
+  if ENV["HOMEBREW_DEVELOPER"]
+    $stderr.puts <<~EOS
+      Warning: #{e.message}
+      Retrying with `exec #{ENV["HOMEBREW_BREW_FILE"]}`!
+    EOS
+  end
+
+  ENV["HOMEBREW_MISSING_ENV_RETRY"] = "1"
+  exec ENV["HOMEBREW_BREW_FILE"], *ARGV
+end
 
 begin
   trap("INT", std_trap) # restore default CTRL-C handler
@@ -77,12 +92,13 @@ begin
     # `Homebrew.help` never returns, except for external/unknown commands.
   end
 
-  # Migrate LinkedKegs/PinnedKegs if update didn't already do so
-  UpdateMigrator.migrate_legacy_keg_symlinks_if_necessary
-
   # Uninstall old brew-cask if it's still around; we just use the tap now.
   if cmd == "cask" && (HOMEBREW_CELLAR/"brew-cask").exist?
     system(HOMEBREW_BREW_FILE, "uninstall", "--force", "brew-cask")
+  end
+
+  if ENV["HOMEBREW_BUILD_FROM_SOURCE"]
+    odeprecated("HOMEBREW_BUILD_FROM_SOURCE", "--build-from-source")
   end
 
   if internal_cmd

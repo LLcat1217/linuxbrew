@@ -231,9 +231,9 @@ these flags should only appear after a command.
 
     To view formula history locally: `brew log -p` *`formula`*
 
-  * `info` `--json=`*`version`* (`--all`|`--installed`|*`formulae`*):
-    Print a JSON representation of *`formulae`*. Currently the only accepted value
-    for *`version`* is `v1`.
+  * `info` `--json[=`*`version`*] (`--all`|`--installed`|*`formulae`*):
+    Print a JSON representation of *`formulae`*. Currently the default and
+    only accepted value for *`version`* is `v1`.
 
     Pass `--all` to get information on all formulae, or `--installed` to get
     information on all installed formulae.
@@ -264,10 +264,9 @@ these flags should only appear after a command.
 
     If `--cc=`*`compiler`* is passed, attempt to compile using *`compiler`*.
     *`compiler`* should be the name of the compiler's executable, for instance
-    `gcc-8` for gcc 8, `gcc-4.2` for Apple's GCC 4.2, or `gcc-4.9` for a
-    Homebrew-provided GCC 4.9. In order to use LLVM's clang, use
-    `llvm_clang`. To specify the Apple-provided clang, use `clang`. This
-    parameter will only accept compilers that are provided by Homebrew or
+    `gcc-7` for GCC 7. In order to use LLVM's clang, use `llvm_clang`.
+    To specify the Apple-provided clang, use `clang`.
+    This parameter will only accept compilers that are provided by Homebrew or
     bundled with macOS. Please do not file issues if you encounter errors
     while using this flag.
 
@@ -316,9 +315,6 @@ these flags should only appear after a command.
 
     If `--git` (or `-g`) is passed, Homebrew will create a Git repository, useful for
     creating patches to the software.
-
-    If `HOMEBREW_INSTALL_CLEANUP` is set then remove previously installed versions
-    of upgraded *`formulae`* as well as the HOMEBREW_CACHE for that formula.
 
   * `leaves`:
     Show installed formulae that are not dependencies of another installed formula.
@@ -414,11 +410,7 @@ these flags should only appear after a command.
     Rerun the post-install steps for *`formula`*.
 
   * `prune` [`--dry-run`]:
-    Remove dead symlinks from the Homebrew prefix. This is generally not
-    needed, but can be useful when doing DIY installations.
-
-    If `--dry-run` or `-n` is passed, show what would be removed, but do not
-    actually remove anything.
+    Deprecated. Use `brew cleanup` instead.
 
   * `readall` [`--aliases`] [`--syntax`] [*`taps`*]:
     Import all formulae from specified *`taps`* (defaults to all installed taps).
@@ -608,13 +600,10 @@ these flags should only appear after a command.
     `repositories`) using `git`(1) to their latest `origin/master`. Note this
     will destroy all your uncommitted or committed changes.
 
-  * `upgrade` [*`install-options`*] [`--cleanup`] [`--fetch-HEAD`] [`--ignore-pinned`] [`--display-times`] [*`formulae`*]:
+  * `upgrade` [*`install-options`*] [`--fetch-HEAD`] [`--ignore-pinned`] [`--display-times`] [*`formulae`*]:
     Upgrade outdated, unpinned brews (with existing install options).
 
     Options for the `install` command are also valid here.
-
-    If `--cleanup` is specified or `HOMEBREW_INSTALL_CLEANUP` is set then remove
-    previously installed version(s) of upgraded *`formulae`*.
 
     If `--fetch-HEAD` is passed, fetch the upstream repository to detect if
     the HEAD installation of the formula is outdated. Otherwise, the
@@ -991,6 +980,9 @@ If no arguments are passed, use `origin/master` as the start commit.
 * `--before`:
   Use the commit at provided *`date`* as the start commit.
 
+  * `vendor-gems`:
+    Install and commit Homebrew's vendored gems.
+
 ## GLOBAL OPTIONS
 
 These options are applicable across all sub-commands.
@@ -1009,47 +1001,54 @@ These options are applicable across all sub-commands.
 
 ## OFFICIAL EXTERNAL COMMANDS
 
-  * `bundle` *`command`*:
-    Bundler for non-Ruby dependencies from Homebrew.
+  * `bundle` *`subcommand`*
 
-    `brew bundle` [`install`] [`-v`|`--verbose`] [`--no-upgrade`] [`--file=`*`path`*|`--global`]:
-    Install or upgrade all dependencies in a Brewfile.
+  Bundler for non-Ruby dependencies from Homebrew, Homebrew Cask and the Mac App Store.
 
-    `brew bundle dump` [`--force`] [`--describe`] [`--file=`*`path`*|`--global`]:
-    Write all installed casks/formulae/taps into a Brewfile.
+       --file=                        read the `Brewfile` from this file. Use `--file=-` to output to stdin/stdout.
+       --global                       read the `Brewfile` from `~/.Brewfile`.
 
-    `brew bundle cleanup` [`--force`] [`--zap`] [`--file=`*`path`*|`--global`]:
-    Uninstall all dependencies not listed in a Brewfile.
+  `brew bundle` [`install`] [`-v`|`--verbose`] [`--no-upgrade`] [`--file=`*`path`*|`--global`]
 
-    `brew bundle check` [`--no-upgrade`] [`--file=`*`path`*|`--global`] [`--verbose`]:
-    Check if all dependencies are installed in a Brewfile. Missing dependencies are listed in verbose mode.
-    `check` will exit on the first category missing a dependency unless in verbose mode.
+  Install or upgrade all dependencies in a Brewfile.
 
-    `brew bundle exec` *`command`*:
-    Run an external command in an isolated build environment.
+       -v, --verbose                  print the output from commands as they are run.
+       --no-upgrade                   don't run `brew upgrade` on outdated dependencies. Note they may still be upgraded by `brew install` if needed.
 
-    `brew bundle list` [`--all`|`--brews`|`--casks`|`--taps`|`--mas`] [`--file=`*`path`*|`--global`]:
-    List all dependencies present in a Brewfile, optionally limiting by types.
-    By default, only brew dependencies are output.
+  `brew bundle dump` [`--force`] [`--describe`] [`--file=`*`path`*|`--global`]
 
-    If `-v` or `--verbose` are passed, print verbose output.
+  Write all installed casks/formulae/taps into a Brewfile.
 
-    If `--no-upgrade` is passed, don't run `brew upgrade` on outdated dependencies.
-    Note they may still be upgraded by `brew install` if needed.
+       --force                        overwrite an existing `Brewfile`.
+       --describe                     output a description comment above each line. This comment will not be output if the dependency does not have a description.
 
-    If `--force` is passed, uninstall dependencies or overwrite an existing Brewfile.
+  `brew bundle cleanup` [`--force`] [`--zap`] [`--file=`*`path`*|`--global`]
 
-    If `--zap` is passed, casks will be removed using the `zap` command instead of `uninstall`.
+  Uninstall all dependencies not listed in a Brewfile.
 
-    If `--file=`*`path`* is passed, the Brewfile path is set accordingly.
-    Use `--file=-` to output to console.
+       --force                        actually perform the cleanup operations.
+       --zap                          casks will be removed using the `zap` command instead of `uninstall`.
 
-    If `--global` is passed, set the Brewfile path to `~/.Brewfile`.
+  `brew bundle check` [`--no-upgrade`] [`--file=`*`path`*|`--global`] [`--verbose`]
 
-    If `--describe` is passed, output a description comment above each line.
-    This comment will not be output if the dependency does not have a description.
+  Check if all dependencies are installed in a Brewfile.
 
-    If `-h` or `--help` are passed, print this help message and exit.
+       --no-upgrade                   ignore outdated dependencies.
+       -v, --verbose                  output and check for all missing dependencies.
+
+  `brew bundle exec` *`command`*
+
+  Run an external command in an isolated build environment.
+
+  `brew bundle list` [`--all`|`--brews`|`--casks`|`--taps`|`--mas`] [`--file=`*`path`*|`--global`]
+
+  List all dependencies present in a Brewfile. By default, only brew dependencies are output.
+
+       --all                          output all dependencies.
+       --brews                        output Homebrew dependencies.
+       --casks                        output Homebrew Cask dependencies.
+       --taps                         output tap dependencies.
+       --mas                          output Mac App Store dependencies.
 
     **Homebrew/homebrew-bundle**: <https://github.com/Homebrew/homebrew-bundle>
 
@@ -1058,29 +1057,38 @@ These options are applicable across all sub-commands.
 
     **Homebrew/homebrew-cask**: <https://github.com/Homebrew/homebrew-cask>
 
-  * `services` *`command`*:
-    Integrates Homebrew formulae with macOS' `launchctl` manager.
+  * `services` *`subcommand`*:
 
-    [`sudo`] `brew services list`:
-    List all running services for the current user (or root).
+  Manage background services with macOS' `launchctl`(1) daemon manager
 
-    [`sudo`] `brew services run` (*`formula`*|`--all`):
-    Run the service *`formula`* without registering to launch at login (or boot).
+       --all                           run *`subcommand`* on all services.
 
-    [`sudo`] `brew services start` (*`formula`*|`--all`):
-    Start the service *`formula`* immediately and register it to launch at login (or boot).
+  [`sudo`] `brew services list`
 
-    [`sudo`] `brew services stop` (*`formula`*|`--all`):
-    Stop the service *`formula`* immediately and unregister it from launching at login (or boot).
+  List all running services for the current user (or root).
 
-    [`sudo`] `brew services restart` (*`formula`*|`--all`):
-    Stop (if necessary) and start the service *`formula`* immediately and register it to launch at login (or boot).
+  [`sudo`] `brew services run` (*`formula`*|`--all`)
 
-    [`sudo`] `brew services cleanup`:
-    Remove all unused services.
+  Run the service *`formula`* without registering to launch at login (or boot).
 
-    If `sudo` is passed, operate on `/Library/LaunchDaemons` (started at boot).
-    Otherwise, operate on `~/Library/LaunchAgents` (started at login).
+  [`sudo`] `brew services start` (*`formula`*|`--all`)
+
+  Start the service *`formula`* immediately and register it to launch at login (or boot).
+
+  [`sudo`] `brew services stop` (*`formula`*|`--all`)
+
+  Stop the service *`formula`* immediately and unregister it from launching at login (or boot).
+
+  [`sudo`] `brew services restart` (*`formula`*|`--all`)
+
+  Stop (if necessary) and start the service *`formula`* immediately and register it to launch at login (or boot).
+
+  [`sudo`] `brew services cleanup`
+
+  Remove all unused services.
+
+  If `sudo` is passed, operate on `/Library/LaunchDaemons` (started at boot).
+  Otherwise, operate on `~/Library/LaunchAgents` (started at login).
 
     **Homebrew/homebrew-services**: <https://github.com/Homebrew/homebrew-services>
 
@@ -1148,12 +1156,6 @@ Note that environment variables must have a value set to be detected. For exampl
     If set, Homebrew uses this setting as the browser when opening project
     homepages, instead of the OS default browser.
 
-  * `HOMEBREW_BUILD_FROM_SOURCE`:
-    If set, instructs Homebrew to compile from source even when a formula
-    provides a bottle. This environment variable is intended for use by
-    Homebrew developers. Please do not file issues if you encounter errors when
-    using this environment variable.
-
   * `HOMEBREW_CACHE`:
     If set, instructs Homebrew to use the specified directory as the download cache.
 
@@ -1206,6 +1208,16 @@ Note that environment variables must have a value set to be detected. For exampl
 
     *Default:* the beer emoji.
 
+  * `HOMEBREW_INSTALL_CLEANUP`:
+    If set, `brew install`, `brew upgrade` and `brew reinstall` will remove
+    previously installed version(s) of the installed/upgraded formulae.
+
+    If `brew cleanup` has not been run in 30 days then it will be run at this
+    time.
+
+    This will become the default in a later version of Homebrew. To opt-out see
+    `HOMEBREW_NO_INSTALL_CLEANUP`.
+
   * `HOMEBREW_LOGS`:
     If set, Homebrew will use the specified directory to store log files.
 
@@ -1221,6 +1233,10 @@ Note that environment variables must have a value set to be detected. For exampl
   * `HOMEBREW_NO_AUTO_UPDATE`:
     If set, Homebrew will not auto-update before running `brew install`,
     `brew upgrade` or `brew tap`.
+
+  * `HOMEBREW_NO_BOTTLE_SOURCE_FALLBACK`:
+    If set, Homebrew will fail on the failure of installation from a bottle
+    rather than falling back to building from source.
 
   * `HOMEBREW_NO_COLOR`:
     If set, Homebrew will not print text with color added.
@@ -1243,6 +1259,11 @@ Note that environment variables must have a value set to be detected. For exampl
     If set, Homebrew will not use the GitHub API, e.g. for searches or
     fetching relevant issues on a failed install.
 
+  * `HOMEBREW_NO_INSTALL_CLEANUP`:
+    If set, `brew install`, `brew upgrade` and `brew reinstall` will never
+    automatically remove the previously installed version(s) of the
+    installed/upgraded formulae.
+
   * `HOMEBREW_PRY`:
     If set, Homebrew will use Pry for the `brew irb` command.
 
@@ -1263,9 +1284,6 @@ Note that environment variables must have a value set to be detected. For exampl
   * `HOMEBREW_UPDATE_TO_TAG`:
     If set, instructs Homebrew to always use the latest stable tag (even if
     developer commands have been run).
-
-  * `HOMEBREW_UPGRADE_CLEANUP`:
-    If set, `brew upgrade` always assumes `--cleanup` has been passed.
 
   * `HOMEBREW_VERBOSE`:
     If set, Homebrew always assumes `--verbose` when running commands.
@@ -1327,11 +1345,11 @@ Homebrew's lead maintainer is Mike McQuaid.
 
 Homebrew's project leadership committee is Mike McQuaid, Misty De Meo and Markus Reiter.
 
-Homebrew/brew's other current maintainers are Claudia, Michka Popoff, Shaun Jackman, Chongyu Zhu, Vitor Galvao, Misty De Meo, Gautham Goli, Markus Reiter, Steven Peters, Jonathan Chang and William Woodruff.
+Homebrew/brew's other current maintainers are Claudia Pellegrino, Michka Popoff, Shaun Jackman, Chongyu Zhu, Vitor Galvao, Misty De Meo, Gautham Goli, Markus Reiter, Steven Peters, Jonathan Chang and William Woodruff.
 
 Homebrew/brew's Linux support (and Linuxbrew) maintainers are Michka Popoff and Shaun Jackman.
 
-Homebrew/homebrew-core's other current maintainers are Claudia, Michka Popoff, Shaun Jackman, Chongyu Zhu, Izaak Beekman, Sean Molenaar, Jan Viljanen, Jason Tedor, Viktor Szakats, FX Coudert, Thierry Moisan, Steven Peters, Misty De Meo and Tom Schoonjans.
+Homebrew/homebrew-core's other current maintainers are Claudia Pellegrino, Igor Kapkov, Michka Popoff, Shaun Jackman, Chongyu Zhu, Izaak Beekman, Sean Molenaar, Jan Viljanen, Jason Tedor, Viktor Szakats, FX Coudert, Thierry Moisan, Steven Peters, Misty De Meo and Tom Schoonjans.
 
 Former maintainers with significant contributions include JCount, commitay, Dominyk Tiller, Tim Smith, Baptiste Fontaine, Xu Cheng, Martin Afanasjew, Brett Koonce, Charlie Sharpsteen, Jack Nagel, Adam Vandenberg, Andrew Janke, Alex Dunn, neutric, Tomasz Pajor, Uladzislau Shablinski, Alyssa Ross, ilovezfs and Homebrew's creator: Max Howell.
 

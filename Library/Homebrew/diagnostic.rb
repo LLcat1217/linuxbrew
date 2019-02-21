@@ -73,26 +73,37 @@ module Homebrew
       end
       ############# END HELPERS
 
-      def fatal_install_checks
+      def fatal_preinstall_checks
         %w[
           check_access_directories
         ].freeze
       end
 
-      def development_tools_checks
+      def fatal_build_from_source_checks
         %w[
           check_for_installed_developer_tools
         ].freeze
       end
 
-      def fatal_development_tools_checks
-        %w[
-        ].freeze
+      def supported_configuration_checks
+        [].freeze
+      end
+
+      def build_from_source_checks
+        [].freeze
       end
 
       def build_error_checks
-        (development_tools_checks + %w[
-        ]).freeze
+        supported_configuration_checks + build_from_source_checks
+      end
+
+      def please_create_pull_requests(what = "unsupported configuration")
+        <<~EOS
+          You will encounter build failures with some formulae.
+          Please create pull requests instead of asking for help on Homebrew's GitHub,
+          Discourse, Twitter or IRC. You are responsible for resolving any issues you
+          experience, as you are running this #{what}.
+        EOS
       end
 
       def check_for_installed_developer_tools
@@ -108,10 +119,8 @@ module Homebrew
         return unless ENV["HOMEBREW_BUILD_FROM_SOURCE"]
 
         <<~EOS
-          You have HOMEBREW_BUILD_FROM_SOURCE set. This environment variable is
-          intended for use by Homebrew developers. If you are encountering errors,
-          please try unsetting this. Please do not file issues if you encounter
-          errors when using this environment variable.
+          You have HOMEBREW_BUILD_FROM_SOURCE set.
+          #{please_create_pull_requests}
         EOS
       end
 
@@ -288,7 +297,7 @@ module Homebrew
         return if broken_symlinks.empty?
 
         inject_file_list broken_symlinks, <<~EOS
-          Broken symlinks were found. Remove them with `brew prune`:
+          Broken symlinks were found. Remove them with `brew cleanup`:
         EOS
       end
 
@@ -536,7 +545,7 @@ module Homebrew
         return if !Utils.git_available? || !(HOMEBREW_REPOSITORY/".git").exist?
 
         origin = HOMEBREW_REPOSITORY.git_origin
-        remote = "https://github.com/#{OS::GITHUB_USER}/brew.git"
+        remote = "https://github.com/Homebrew/brew"
 
         if origin.nil?
           <<~EOS
@@ -546,7 +555,22 @@ module Homebrew
             properly. You can solve this by adding the Homebrew remote:
               git -C "#{HOMEBREW_REPOSITORY}" remote add origin #{Formatter.url(remote)}
           EOS
-        elsif origin !~ %r{(Homebrew|Linuxbrew)/brew(\.git)?$}
+        elsif origin =~ %r{Linuxbrew/brew(\.git)?$}
+          return if ENV["CI"]
+
+          <<~EOS
+            git origin remote is Linuxbrew/brew.
+
+            Linuxbrew/brew has been merged into Homebrew/brew!
+            Linuxbrew/brew will no longer be updated.
+            The current git origin is:
+              #{origin}
+
+            Please set the origin remote to point at the Homebrew/brew by running:
+
+              git -C "#{HOMEBREW_REPOSITORY}" remote set-url origin #{Formatter.url(remote)}
+          EOS
+        elsif origin !~ %r{Homebrew/brew(\.git)?$}
           <<~EOS
             Suspicious Homebrew/brew git origin remote found.
 
@@ -567,7 +591,7 @@ module Homebrew
         return if !Utils.git_available? || !(coretap_path/".git").exist?
 
         origin = coretap_path.git_origin
-        remote = "https://github.com/#{OS::GITHUB_USER}/homebrew-core.git"
+        remote = "https://github.com/Homebrew/homebrew-core.git"
 
         if origin.nil?
           <<~EOS
@@ -792,6 +816,17 @@ module Homebrew
               #{bad_tap_files[tap].join("\n  ")}
           EOS
         end.join("\n")
+      end
+
+      def check_homebrew_prefix
+        return if Homebrew.default_prefix?
+
+        <<~EOS
+          Your Homebrew's prefix is not #{Homebrew::DEFAULT_PREFIX}.
+          Some of Homebrew's bottles (binary packages) can only be used with the default
+          prefix (#{Homebrew::DEFAULT_PREFIX}).
+          #{please_create_pull_requests}
+        EOS
       end
 
       def all

@@ -21,7 +21,7 @@ Homebrew uses Git for downloading updates and contributing to the project.
 
 Homebrew installs to the `Cellar` and then symlinks some of the installation into `/usr/local` so that other programs can see what's going on. We suggest you `brew ls` a few of the kegs in your Cellar to see how it is all arranged.
 
-Packages are installed according to their formulae, which live in `/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula`. Check one out a simple one, e.g. `brew edit etl` (or [`etl`](https://github.com/Homebrew/homebrew-core/blob/master/Formula/etl.rb)) or a more advanced one, e.g. `brew edit git` (or [`git`](https://github.com/Homebrew/homebrew-core/blob/master/Formula/git.rb)).
+Packages are installed according to their formulae, which live in `/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/Formula`. Check out a simple one, e.g. `brew edit etl` (or [`etl`](https://github.com/Homebrew/homebrew-core/blob/master/Formula/etl.rb)) or a more advanced one, e.g. `brew edit git` (or [`git`](https://github.com/Homebrew/homebrew-core/blob/master/Formula/git.rb)).
 
 ## Basic instructions
 
@@ -187,7 +187,7 @@ Occasionally, these updates require a forced-recompile of the formula itself or 
 
 When a dependent of a formula fails against a new version of that dependency it must receive a [`revision`](https://www.rubydoc.info/github/Homebrew/brew/master/Formula#revision%3D-class_method). An example of such failure can be seen [here](https://github.com/Homebrew/legacy-homebrew/issues/31195) and the fix [here](https://github.com/Homebrew/legacy-homebrew/pull/31207).
 
-[`revision`](https://www.rubydoc.info/github/Homebrew/brew/master/Formula#revision%3D-class_method)s are also used for formulae that move from the system OpenSSL to the Homebrew-shipped OpenSSL without any other changes to that formula. This ensures users aren’t left exposed to the potential security issues of the outdated OpenSSL. An example of this can be seen in [this commit](https://github.com/Homebrew/legacy-homebrew/commit/6b9d60d474d72b1848304297d91adc6120ea6f96).
+[`revision`](https://www.rubydoc.info/github/Homebrew/brew/master/Formula#revision%3D-class_method)s are also used for formulae that move from the system OpenSSL to the Homebrew-shipped OpenSSL without any other changes to that formula. This ensures users aren’t left exposed to the potential security issues of the outdated OpenSSL. An example of this can be seen in [this commit](https://github.com/Homebrew/homebrew-core/commit/0d4453a91923e6118983961e18d0609e9828a1a4).
 
 ### Version scheme changes
 

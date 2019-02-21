@@ -120,8 +120,8 @@ Or:
     fix this for Homebrew formulae (although we don’t always test for
     it), but you’ll find that many RubyGems and Python setup scripts
     break which is something outside our control.
-3.  **It’s safe**<br>Apple has assigned this directory for non-system utilities. Which means
-    there is no files in `/usr/local` by default, so there
+3.  **It’s safe**<br>Apple has assigned this directory for non-system utilities. This means
+    there are no files in `/usr/local` by default, so there
     is no need to worry about messing up existing or system tools.
 
 **If you plan to install gems that depend on
@@ -140,7 +140,7 @@ You should only ever sudo a tool you trust. Of course, you can trust Homebrew
 😉 But do you trust the multi-megabyte Makefile that Homebrew runs? Developers
 often understand C++ far better than they understand make syntax. It’s too high
 a risk to sudo such stuff. It could modify (or upload) any files on your
-system.And indeed, we’ve seen some build scripts try to modify `/usr` even when
+system. And indeed, we’ve seen some build scripts try to modify `/usr` even when
 the prefix was specified as something else entirely.
 
 We use the macOS sandbox to stop this but this doesn't work when run as the `root` user (which also has read and write access to almost everything on the system).

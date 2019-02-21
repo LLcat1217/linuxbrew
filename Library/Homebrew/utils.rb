@@ -203,7 +203,7 @@ module Homebrew
     _system(cmd, *args, **options)
   end
 
-  def install_gem!(name, version = nil)
+  def setup_gem_environment!
     # Match where our bundler gems are.
     ENV["GEM_HOME"] = "#{ENV["HOMEBREW_LIBRARY"]}/Homebrew/vendor/bundle/ruby/#{RbConfig::CONFIG["ruby_version"]}"
     ENV["GEM_PATH"] = ENV["GEM_HOME"]
@@ -217,11 +217,16 @@ module Homebrew
     path.prepend(RUBY_BIN) if which("ruby") != RUBY_PATH
     path.prepend(Gem.bindir)
     ENV["PATH"] = path
+  end
+
+  # TODO: version can be removed when compat/download_strategy is deleted in 2.0
+  def install_gem!(name, version = nil)
+    setup_gem_environment!
 
     return unless Gem::Specification.find_all_by_name(name, version).empty?
 
     ohai "Installing or updating '#{name}' gem"
-    install_args = %W[--no-ri --no-rdoc #{name}]
+    install_args = %W[--no-document #{name}]
     install_args << "--version" << version if version
 
     # Do `gem install [...]` without having to spawn a separate process or
@@ -238,8 +243,8 @@ module Homebrew
     odie "Failed to install/update the '#{name}' gem." if exit_code.nonzero?
   end
 
-  def install_gem_setup_path!(name, version = nil, executable = name)
-    install_gem!(name, version)
+  def install_gem_setup_path!(name, executable: name)
+    install_gem!(name)
 
     return if which(executable)
 
@@ -247,6 +252,17 @@ module Homebrew
       The '#{name}' gem is installed but couldn't find '#{executable}' in the PATH:
       #{ENV["PATH"]}
     EOS
+  end
+
+  def install_bundler!
+    install_gem_setup_path! "bundler", executable: "bundle"
+  end
+
+  def install_bundler_gems!
+    install_bundler!
+    ENV["BUNDLE_GEMFILE"] = "#{HOMEBREW_LIBRARY_PATH}/test/Gemfile"
+    system "bundle", "install" unless quiet_system("bundle", "check")
+    setup_gem_environment!
   end
 
   # rubocop:disable Style/GlobalVars
@@ -275,7 +291,7 @@ module Homebrew
 
     $times = {}
     at_exit do
-      col_width = [$times.keys.map(&:size).max + 2, 15].max
+      col_width = [$times.keys.map(&:size).max.to_i + 2, 15].max
       $times.sort_by { |_k, v| v }.each do |method, time|
         puts format("%-*s %0.4f sec", col_width, "#{method}:", time)
       end
@@ -300,7 +316,7 @@ end
 def safe_system(cmd, *args, **options)
   return if Homebrew.system(cmd, *args, **options)
 
-  raise(ErrorDuringExecution.new([cmd, *args], status: $CHILD_STATUS))
+  raise ErrorDuringExecution.new([cmd, *args], status: $CHILD_STATUS)
 end
 
 # Prints no output

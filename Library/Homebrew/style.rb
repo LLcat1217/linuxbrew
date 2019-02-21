@@ -17,8 +17,7 @@ module Homebrew
     def check_style_impl(files, output_type, options = {})
       fix = options[:fix]
 
-      Homebrew.install_gem_setup_path! "rubocop"
-      Homebrew.install_gem! "rubocop-rspec"
+      Homebrew.install_bundler_gems!
       require "rubocop"
       require "rubocops"
 
@@ -61,8 +60,13 @@ module Homebrew
         File.expand_path(file).start_with? HOMEBREW_LIBRARY_PATH
       end
 
-      unless files.nil? || has_non_formula
-        args << "--config" << HOMEBREW_LIBRARY/".rubocop_audit.yml"
+      if files && !has_non_formula
+        config = if files.first && File.exist?("#{files.first}/spec")
+          HOMEBREW_LIBRARY/".rubocop_rspec.yml"
+        else
+          HOMEBREW_LIBRARY/".rubocop_audit.yml"
+        end
+        args << "--config" << config
       end
 
       if files.nil?
